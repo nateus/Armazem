@@ -23,7 +23,7 @@ void LoginWindow::on_pushButton_clicked()
     QString errorMsg;
 
     if (usuario.isEmpty() || senha.isEmpty()) {
-        QMessageBox::warning(this, "Aviso", "Preencha usuário e senha.");
+        QMessageBox::warning(this, "Aviso", "Preencha usuario e senha.");
         return;
     }
 

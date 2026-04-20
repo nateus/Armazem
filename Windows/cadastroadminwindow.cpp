@@ -27,12 +27,17 @@ void CadastroAdminWindow::on_pushButton_clicked()
     }
 
     if (senha != confirma) {
-        QMessageBox::warning(this, "Erro", "As senhas não coincidem!");
+        QMessageBox::warning(this, "Erro", "As senhas nao coincidem!");
+        return;
+    }
+
+    if (!m_authService) {
+        QMessageBox::critical(this, "Erro", "Servico de autenticacao indisponivel.");
         return;
     }
 
     if (m_authService->registerInitialAdmin(senha)) {
-        QMessageBox::information(this, "Sucesso", "Administrador registrado! Faça o login.");
+        QMessageBox::information(this, "Sucesso", "Administrador registrado! Faca o login.");
         emit adminRegistered();
     } else {
         QMessageBox::critical(this, "Erro", "Falha ao registrar administrador.");
