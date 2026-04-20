@@ -9,9 +9,9 @@
 #include <QTranslator>
 
 namespace {
-QWidget *createDefaultInitialWindow(AppContext &)
+QWidget *createDefaultInitialWindow(AppContext &appContext)
 {
-    return new LoginWindow();
+    return new LoginWindow(appContext.authService().get());
 }
 }
 
