@@ -1,11 +1,20 @@
 #pragma once
+
 #include <QString>
 
-class PasswordUtils {
+#include <QCryptographicHash>
+
+class PasswordUtils
+{
 public:
-    // Transforma uma senha em texto puro em um Hash SHA-256
-    static QString hashPassword(const QString& plainText);
-    
-    // Compara uma senha digitada com o Hash salvo no banco
-    static bool verifyPassword(const QString& plainText, const QString& hash);
+    static QString hashPassword(const QString &plainText)
+    {
+        return QString::fromLatin1(
+            QCryptographicHash::hash(plainText.toUtf8(), QCryptographicHash::Sha256).toHex());
+    }
+
+    static bool verifyPassword(const QString &plainText, const QString &hash)
+    {
+        return hashPassword(plainText) == hash;
+    }
 };

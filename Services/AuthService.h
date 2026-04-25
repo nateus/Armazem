@@ -2,25 +2,27 @@
 #define AUTHSERVICE_H
 
 #include <QString>
-// Headers assumidos dos pacotes 2 e 3:
-// #include "DAO/UsuarioDAO.h"
-// #include "Utils/PasswordUtils.h"
 
-// Forward declaration para compilar sem o arquivo real do DAO agora
-class UsuarioDAO; 
+#include <memory>
 
-class AuthService {
+#include "../DAO/UsuarioDAO.h"
+
+class AuthService
+{
 public:
-    // Recebe o DAO por injeção de dependência
-    explicit AuthService(UsuarioDAO* usuarioDao);
+    explicit AuthService(const std::shared_ptr<UsuarioDAO> &usuarioDao);
 
-    bool checkAdminExists() const;
-    bool registerInitialAdmin(const QString& senha); // Assumiremos o login 'admin'
-    bool login(const QString& login, const QString& senha, QString& outErrorMessage);
+    bool checkAdminExists();
+    bool registerInitialAdmin(const QString &senha);
+    bool login(const QString &login, const QString &senha, QString &outErrorMessage);
     void logout();
+    QString lastError() const;
 
 private:
-    UsuarioDAO* m_usuarioDao;
+    void setLastError(const QString &message);
+
+    std::shared_ptr<UsuarioDAO> m_usuarioDao;
+    QString m_lastError;
 };
 
 #endif // AUTHSERVICE_H

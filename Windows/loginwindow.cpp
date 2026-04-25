@@ -1,14 +1,20 @@
 #include "loginwindow.h"
+
 #include "ui_loginwindow.h"
+
 #include "../Services/AuthService.h"
+
+#include <QApplication>
+#include <QLineEdit>
 #include <QMessageBox>
 
-LoginWindow::LoginWindow(AuthService* authService, QWidget *parent)
+LoginWindow::LoginWindow(AuthService *authService, QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::LoginWindow)
     , m_authService(authService)
 {
     ui->setupUi(this);
+    ui->textEdit_2->setEchoMode(QLineEdit::Password);
 }
 
 LoginWindow::~LoginWindow()
@@ -18,8 +24,8 @@ LoginWindow::~LoginWindow()
 
 void LoginWindow::on_pushButton_clicked()
 {
-    QString usuario = ui->textEdit->toPlainText();
-    QString senha = ui->textEdit_2->toPlainText();
+    const QString usuario = ui->textEdit->text().trimmed();
+    const QString senha = ui->textEdit_2->text();
     QString errorMsg;
 
     if (usuario.isEmpty() || senha.isEmpty()) {
@@ -33,9 +39,12 @@ void LoginWindow::on_pushButton_clicked()
     }
 
     if (m_authService->login(usuario, senha, errorMsg)) {
+        ui->textEdit_2->clear();
+        QMessageBox::information(this, "Sucesso", "Login realizado com sucesso.");
         emit loginSuccessful();
     } else {
-        QMessageBox::critical(this, "Acesso Negado", errorMsg);
+        ui->textEdit_2->clear();
+        QMessageBox::warning(this, "Acesso negado", errorMsg);
     }
 }
 
@@ -46,10 +55,5 @@ void LoginWindow::on_pushButton_2_clicked()
 
 void LoginWindow::on_checkBox_toggled(bool checked)
 {
-
-    /*if (checked) {
-        ui->inputSenha->setEchoMode(QLineEdit::Normal);
-    } else {
-        ui->inputSenha->setEchoMode(QLineEdit::Password);
-    }*/
+    ui->textEdit_2->setEchoMode(checked ? QLineEdit::Normal : QLineEdit::Password);
 }

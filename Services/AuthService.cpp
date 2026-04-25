@@ -1,68 +1,126 @@
 #include "AuthService.h"
+
 #include "../Core/SessionManager.h"
-#include <QDebug>
+#include "../Models/Enums.h"
+#include "../Models/Usuario.h"
+#include "../Utils/PasswordUtils.h"
 
-// Assumindo a interface do colega do pacote 3:
-// #include "DAO/UsuarioDAO.h"
-// #include "Models/Usuario.h"
-// Assumindo pacote 2:
-// #include "Utils/PasswordUtils.h"
+#include <QDateTime>
 
-AuthService::AuthService(UsuarioDAO* usuarioDao) 
-    : m_usuarioDao(usuarioDao) {}
-
-bool AuthService::checkAdminExists() const {
-    // Chamada ao pacote 3
-    // return m_usuarioDao->existsAdmin();
-    return false; // Placeholder para compilar
+AuthService::AuthService(const std::shared_ptr<UsuarioDAO> &usuarioDao)
+    : m_usuarioDao(usuarioDao)
+{
 }
 
-bool AuthService::registerInitialAdmin(const QString& senha) {
+bool AuthService::checkAdminExists()
+{
+    if (!m_usuarioDao) {
+        setLastError(QStringLiteral("Servico de autenticacao sem acesso ao DAO de usuarios."));
+        return false;
+    }
+
+    const bool exists = m_usuarioDao->existsAdmin();
+    if (!exists) {
+        setLastError(m_usuarioDao->lastError());
+    } else {
+        m_lastError.clear();
+    }
+
+    return exists;
+}
+
+bool AuthService::registerInitialAdmin(const QString &senha)
+{
+    if (!m_usuarioDao) {
+        setLastError(QStringLiteral("Servico de autenticacao sem acesso ao DAO de usuarios."));
+        return false;
+    }
+
+    if (senha.trimmed().isEmpty()) {
+        setLastError(QStringLiteral("A senha do administrador nao pode ficar vazia."));
+        return false;
+    }
+
     if (checkAdminExists()) {
-        return false; // Já existe, não pode criar outro admin inicial
-    }
-
-    // Regra: Senha nunca em texto puro
-    // QString hash = PasswordUtils::hashPassword(senha);
-    QString hash = "hash_falso_aqui"; // Placeholder
-    
-    // Regra: Criar usuário admin
-    // Usuario novoAdmin(0, "Administrador Principal", "admin", hash, "admin", true);
-    // return m_usuarioDao->insert(novoAdmin);
-    return true; // Placeholder
-}
-
-bool AuthService::login(const QString& loginStr, const QString& senha, QString& outErrorMessage) {
-    // 1. Busca o usuário pelo login (Pacote 3)
-    // Usuario user = m_usuarioDao->findByLogin(loginStr);
-    
-    /* Pseudocódigo baseando-se no DAO:
-    if (user.id == 0) {
-        outErrorMessage = "Usuário não encontrado.";
+        setLastError(QStringLiteral("Ja existe um administrador cadastrado."));
         return false;
     }
 
-    // 2. Bloquear usuário inativo (Regra Obrigatória)
-    if (!user.ativo) {
-        outErrorMessage = "Usuário inativo. Acesso bloqueado.";
+    if (!m_lastError.isEmpty()) {
         return false;
     }
 
-    // 3. Validar hash (Pacote 2)
-    if (!PasswordUtils::verifyPassword(senha, user.senha_hash)) {
-        outErrorMessage = "Senha incorreta.";
+    Usuario novoAdmin;
+    novoAdmin.setNome(QStringLiteral("Administrador Principal"));
+    novoAdmin.setLogin(QStringLiteral("admin"));
+    novoAdmin.setSenhaHash(PasswordUtils::hashPassword(senha));
+    novoAdmin.setTipo(TipoUsuario::Admin);
+    novoAdmin.setAtivo(true);
+    novoAdmin.setDataCriacao(QDateTime::currentDateTime());
+
+    const int insertedId = m_usuarioDao->insert(novoAdmin);
+    if (insertedId <= 0) {
+        setLastError(m_usuarioDao->lastError().isEmpty()
+                         ? QStringLiteral("Falha ao registrar o administrador inicial.")
+                         : m_usuarioDao->lastError());
         return false;
     }
 
-    // 4. Iniciar Sessão
-    SessionManager::instance().loginUser(user.id, user.nome, user.login, user.tipo);
+    m_lastError.clear();
     return true;
-    */
-
-    outErrorMessage = "Funcionalidade aguardando Pacotes 2 e 3.";
-    return false;
 }
 
-void AuthService::logout() {
+bool AuthService::login(const QString &login, const QString &senha, QString &outErrorMessage)
+{
+    if (!m_usuarioDao) {
+        outErrorMessage = QStringLiteral("Servico de autenticacao indisponivel.");
+        setLastError(outErrorMessage);
+        return false;
+    }
+
+    const auto usuario = m_usuarioDao->findByLogin(login.trimmed());
+    if (!usuario.has_value()) {
+        outErrorMessage = m_usuarioDao->lastError().isEmpty()
+            ? QStringLiteral("Usuario nao encontrado.")
+            : m_usuarioDao->lastError();
+        setLastError(outErrorMessage);
+        return false;
+    }
+
+    if (!usuario->isAtivo()) {
+        outErrorMessage = QStringLiteral("Usuario inativo. Acesso bloqueado.");
+        setLastError(outErrorMessage);
+        return false;
+    }
+
+    if (!PasswordUtils::verifyPassword(senha, usuario->getSenhaHash())) {
+        outErrorMessage = QStringLiteral("Senha incorreta.");
+        setLastError(outErrorMessage);
+        return false;
+    }
+
+    SessionManager::instance().loginUser(
+        usuario->getId(),
+        usuario->getNome(),
+        usuario->getLogin(),
+        EnumConverter::tipoUsuarioToString(usuario->getTipo()));
+
+    m_lastError.clear();
+    return true;
+}
+
+void AuthService::logout()
+{
     SessionManager::instance().logoutUser();
+    m_lastError.clear();
+}
+
+QString AuthService::lastError() const
+{
+    return m_lastError;
+}
+
+void AuthService::setLastError(const QString &message)
+{
+    m_lastError = message;
 }

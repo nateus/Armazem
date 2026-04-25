@@ -19,6 +19,7 @@ public:
 private:
     void installTranslations(QApplication &application);
     void ensureDefaultInitialWindowFactory();
+    bool ensureAuthDependencies();
 
     AppContext &m_appContext;
 };

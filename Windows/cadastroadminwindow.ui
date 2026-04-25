@@ -54,7 +54,7 @@
     <string>Registrar</string>
    </property>
   </widget>
-  <widget class="QTextEdit" name="textEdit">
+  <widget class="QLineEdit" name="textEdit">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -68,11 +68,14 @@
      <family>Noto Sans</family>
     </font>
    </property>
+   <property name="echoMode">
+    <enum>QLineEdit::Password</enum>
+   </property>
    <property name="placeholderText">
     <string>Senha</string>
    </property>
   </widget>
-  <widget class="QTextEdit" name="textEdit_2">
+  <widget class="QLineEdit" name="textEdit_2">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -85,6 +88,9 @@
     <font>
      <family>Noto Sans</family>
     </font>
+   </property>
+   <property name="echoMode">
+    <enum>QLineEdit::Password</enum>
    </property>
    <property name="placeholderText">
     <string>Senha Novamente</string>
